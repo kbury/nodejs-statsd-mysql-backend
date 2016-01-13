@@ -1,9 +1,11 @@
-nodejs-statsd-mysql-backend
+nodejs-statsd-mssql-backend
 ===========================
 
-MySQL backend for [Statsd](https://github.com/etsy/statsd) by [Etsy](http://www.etsy.com/)
+MSSQL backend for [Statsd](https://github.com/etsy/statsd) by [Etsy](http://www.etsy.com/)
 
-Current version 0.1.0-alpha1
+This is a fork of [nodejs-statsd-mysql-backend](https://github.com/fradinni/nodejs-statsd-mysql-backend.git), adapted for MSSQL
+
+Current version 1.0.0
 
 ## License ##
 The node-js-mysql-backend library is licensed under the MIT license. Copyright (c) 2012-2013 Nicolas FRADIN - Damien PACAUD. All rights reserved.
@@ -20,29 +22,27 @@ You will find a tutorial explaining how to use this Mysql backend here :
 ## Install ##
 Go into Statsd parent directory and execute :
 ```bash
-git clone https://github.com/fradinni/nodejs-statsd-mysql-backend.git
+git clone https://github.com/fradinni/nodejs-statsd-mssql-backend.git
 ```
-You should have a new directory called 'nodejs-statsd-mysql-backend' just next to the Statsd directory.
+You should have a new directory called 'nodejs-statsd-mssql-backend' just next to the Statsd directory.
 
-It could be required to execute the next commands:
+Go into the new directory and install required node packages
 ```
-npm install mysql
-npm install sequence
+npm install
 ```
 
 ## Configuration
-Edit Statsd configuraton file and add mysql-backend configuration.
+Edit Statsd configuraton file and add mssql-backend configuration.
 
 Example :
 ```js
 {
   port: 8125
-, backends: [ "../nodejs-statsd-mysql-backend/mysql-backend.js" ] // Backend MySQL
+, backends: [ "../nodejs-statsd-mssql-backend/mssql-backend.js" ] // Backend MSSQL
 
-  // MySQL Backend minimal configuration
-, mysql: { 
-	   host: "localhost", 
-	   port: 3306, 
+  // MSSQL Backend minimal configuration
+, mssql: { 
+	   server: "localhost",
 	   user: "user", 
 	   password: "passwd", 
 	   database: "dbName"
@@ -52,24 +52,23 @@ Example :
 
 Required parameters :
 
-* `host`: MySQL instance host. 
-* `user`: MySQL user.
-* `password`: MySQL password.
+* `server`: MSSQL instance host. 
+* `user`: MSSQL user.
+* `password`: MSSQL password.
 * `database`: Default database where statsd table will be stored.
 
 Optional parameters :
 
-* `port`: MySQL instance port (defaults to 3306)
-* `tables`: List of tables names used (see 'Customize MySQL Bakend Database' section for more details).
-* `engines`: List of MySQL Backend engines (see 'Customize MySQL Bakend Engines' section for more details).
+* `tables`: List of tables names used (see 'Customize MSSQL Bakend Database' section for more details).
+* `engines`: List of MSSQL Backend engines (see 'Customize MSSQL Bakend Engines' section for more details).
 
 
 ## Introduction
-This is a MySQL backend for statsd. 
+This is an MSSQL backend for statsd. 
 
 It is written in JavaScript, does not require compiling, and is 100% MIT licensed.
 
-It saves received metrics to a MySQL database.
+It saves received metrics to an MSSQL database.
 
 
 ## Supported Metrics
@@ -169,7 +168,7 @@ This is a list of statsd stuff that don't _yet_ work with this backend :
 * sets
 
 
-## Customizing MySQL Backend Database ##
+## Customizing MSSQL Backend Database ##
 
 If you want to change the table name or structure to suit your particular needs, just follow the guide :)
 
@@ -185,11 +184,10 @@ By default database tables are defined like that :
 
 If we want to duplicate statsd counters datas into a new table called 'duplicate_counters_stats', we have to add a new table name to counters tables list.
 
-Open statsd config file, go to the mysql section and add tables configuration :
+Open statsd config file, go to the mssql section and add tables configuration :
 ```
-mysql: { 
-   host: "localhost", 
-   port: 3306, 
+mssql: { 
+   host: "localhost",
    user: "root", 
    password: "root", 
    database: "statsd_db"
@@ -201,7 +199,7 @@ mysql: {
 }
 ```
 
-Then place a new SQL script creating this new table in the "nodejs-statsd-mysql-backend/tables" directory.
+Then place a new SQL script creating this new table in the "nodejs-statsd-mssql-backend/tables" directory.
 The file should be nammed "[table_name].sql", so create a file named 'duplicate_counters_stats.sql'.
 
 Example SQL script 'duplicate_counters_stats.sql' :
@@ -209,28 +207,28 @@ Example SQL script 'duplicate_counters_stats.sql' :
 -- Stadard DELIMITER is $$
 
 -- Duplicate Counters statistics table
-CREATE  TABLE `statsd_db`.`duplicate_counters_stats` (
-    `timestamp` BIGINT NOT NULL ,
-    `name` VARCHAR(255) NOT NULL ,
-    `value` INT(11) NOT NULL ,
-PRIMARY KEY (`name`, `timestamp`) )$$
+CREATE TABLE statsd_db.duplicate_counters_stats (
+    timestamp BIGINT NOT NULL ,
+    name VARCHAR(255) NOT NULL ,
+    value INT NOT NULL ,
+PRIMARY KEY (name, timestamp) )$$
 ```
 
 The last step is the modification of the Counters Query Engine. 
 
 We could create a new Query Engine but we will see how to do that in the next section.
 
-Open the file "nodejs-statsd-mysql-backend/engines/countersEngine.js".
+Open the file "nodejs-statsd-mssql-backend/engines/countersEngine.js".
 
 We will focus on a specific line of this file :
 ```js
-querries.push("insert into `counters_statistics` select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from `counters_statistics`  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
+querries.push("insert into counters_statistics select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from counters_statistics  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
 ```
 
 Just duplicate this line and change the table name :
 ```js
-querries.push("insert into `counters_statistics` select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from `counters_statistics`  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
-querries.push("insert into `duplicate_counters_stats` select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from `duplicate_counters_stats`  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
+querries.push("insert into counters_statistics select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from counters_statistics  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
+querries.push("insert into duplicate_counters_stats select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from duplicate_counters_stats  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
 ```
 
 Your values will be inserted in the two tables: 'counters_statistics' and 'duplicate_counters_stats'.
@@ -240,21 +238,20 @@ In this example, colums are the same in the two tables so, we just have to chang
 But you can do anything with this...
 
 
-## Customizing MySQL Backend Query Engines ##
+## Customizing MSSQL Backend Query Engines ##
 
-If you want to add customized querry engines to MySQL Backend, it's pretty easy.
+If you want to add customized querry engines to MSSQL Backend, it's pretty easy.
 
-First, create a new engine in "nodejs-statsd-mysql-backend/engines" directory.
+First, create a new engine in "nodejs-statsd-mssql-backend/engines" directory.
 For example, copy the existing "countersEngine.js" and rename it into "customizedCountersEngine.js".
 
-Modify the new "customizedCountersEngine.js" to suit your needs and declare your new engine in MySQL Backend configuration.
+Modify the new "customizedCountersEngine.js" to suit your needs and declare your new engine in MSSQL Backend configuration.
 
 Open statsd config file and add engines configuration:
 
 ```js
-mysql: { 
-   host: "localhost", 
-   port: 3306, 
+mssql: { 
+   host: "localhost",
    user: "root", 
    password: "root", 
    database: "statsd_db"

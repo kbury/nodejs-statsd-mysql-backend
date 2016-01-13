@@ -1,0 +1,25 @@
+{
+  "name": "nodejs-statsd-mssql-backend",
+  "version": "1.0.0",
+  "description": "MSSQL backend for Etsys StatsD service",
+  "main": "mssql-backend.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kbury/nodejs-statsd-mysql-backend.git"
+  },
+  "author": "Krystyna Bury",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kbury/nodejs-statsd-mysql-backend/issues"
+  },
+  "homepage": "https://github.com/kbury/nodejs-statsd-mysql-backend#readme",
+  "dependencies": {
+    "fs": "0.0.2",
+    "lodash": "^3.10.1",
+    "mssql": "^2.3.2",
+    "sequence": "^3.0.0"
+  }
+}
