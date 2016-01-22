@@ -11,6 +11,7 @@ var _ = require('lodash'),
     mssql = require('mssql'),
     util = require('util'),
     fs = require('fs'),
+    path = require('path'),
     sequence = require('sequence').Sequence.create();
 
 var STATSD_PACKETS_RECEIVED = "statsd.packets_received";
@@ -56,7 +57,7 @@ function StatdMSSQLBackend(startupTime, config, emitter) {
   for(var backend_index in config.backends) {
     var currentBackend = config.backends[backend_index];
     if(currentBackend.indexOf('mssql-backend.js') > -1) {
-      self.config.backendPath = currentBackend.substring(0, currentBackend.lastIndexOf('/')+1);
+      self.config.backendPath = path.join(__dirname, '/');
     }
   }
 
@@ -166,6 +167,7 @@ StatdMSSQLBackend.prototype.openMSSqlConnection = function() {
     console.log("Sql connection terminated successfully");
   });
 
+  console.log("Connecting...");
   return self.sqlConnection.connect();
 }
 
@@ -303,7 +305,7 @@ StatdMSSQLBackend.prototype.createTable = function(table_name, callback) {
   var self = this;
 
   // Try to read SQL file for this table
-  var sqlFilePath = self.config.backendPath + 'tables/' + table_name + '.sql';
+  var sqlFilePath = path.resolve(self.config.backendPath, 'tables', table_name + '.sql');
   fs.readFile(sqlFilePath, 'utf8', function (err,data) {
     if (err) {
       console.log("Unable to read file: '" + sqlFilePath + "' !");
@@ -367,7 +369,7 @@ StatdMSSQLBackend.prototype.onFlush = function(time_stamp, metrics) {
     .then(function() {
 
       // Handle statsd counters
-      // self.handleCounters(counters,time_stamp);
+      self.handleCounters(counters, time_stamp);
 
       // Handle statsd gauges
       // self.handleMeasures(gauges, self.engines.gauges, time_stamp);
